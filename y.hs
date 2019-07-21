@@ -1,4 +1,6 @@
-baseY = [replicate x '_' ++ ['1'] ++ replicate (31 - 2 * x) '_' ++ ['1'] ++ replicate x '_' | x <- [ 0 .. 15 ]] ++ replicate 16 (replicate 16 '_' ++ ['1'] ++ replicate 16 '_')
+replicateDash = flip replicate '_' 
+
+baseY = [replicateDash x ++ ['1'] ++ replicateDash (31 - 2 * x) ++ ['1'] ++ replicateDash x | x <- [ 0 .. 15 ]] ++ replicate 16 (replicateDash 16 ++ ['1'] ++ replicateDash 16)
 
 shrink = dropAlternate . map dropAlternate
 
@@ -8,19 +10,17 @@ iterShrink n = iterate shrink baseY !! (n - 1)
 
 getPadding starting n = scanl (-) starting [floor $ 8 * 2 ** (-x) | x <- [0..]] !! (n - 1)
 
-leftRightPad n x = replicate (getPadding 33 n) '_' ++ x ++ replicate (getPadding 33 n + 1) '_'
-copy n x = concat (replicate (2 ^ (n - 1) - 1) (x ++ replicate (getPadding 15 (n - 1)) '_')) ++ x 
+leftRightPad n x = let padding = getPadding 33 n in replicateDash padding ++ x ++ replicateDash (padding + 1)
+copy n x = let padding = getPadding 15 (n - 1) in concat (replicate (2 ^ (n - 1) - 1) (x ++ replicateDash padding)) ++ x 
 
 y 0 = []
 y n = map (leftRightPad n . copy n) (iterShrink n) ++ y (n - 1)
 
-addTopPadding tree = replicate (63 - length tree) (replicate 100 '_') ++ tree
+addTopPadding tree = replicate (63 - length tree) (replicateDash 100) ++ tree
 
 makeTree n = let tree = y n in addTopPadding tree
 
 printTree :: [String] -> IO ()
 printTree = mapM_ putStrLn
 
-main = do
-    n <- getLine
-    printTree $ makeTree $ read n
+main = interact $ unlines . makeTree . read 
